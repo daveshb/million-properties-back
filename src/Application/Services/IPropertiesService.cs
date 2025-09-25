@@ -1,0 +1,12 @@
+using MyApp.Domain.Entities;
+
+namespace MyApp.Application.Services;
+
+public interface IPropertiesService
+{
+    Task<IEnumerable<Properties>> GetAllAsync(CancellationToken ct = default);
+    Task<Properties?> GetByIdAsync(string id, CancellationToken ct = default);
+    Task<Properties> CreateAsync(int idOwner, string name, double price, string address, string img, CancellationToken ct = default);
+    Task<bool> UpdateAsync(string id, string name, double price, string address, string img, CancellationToken ct = default);
+    Task<bool> DeleteAsync(string id, CancellationToken ct = default);
+}
