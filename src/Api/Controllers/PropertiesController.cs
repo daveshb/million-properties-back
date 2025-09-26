@@ -44,7 +44,7 @@ public class PropertiesController : ControllerBase
             properties = await _service.GetAllAsync();
         }
 
-        var dtos = properties.Select(p => new PropertiesDtos.PropertiesDto(p.Id, p.Name, p.Price, p.Address, p.Img));
+        var dtos = properties.Select(p => new PropertiesDtos.PropertiesDto(p.Id, p.Name, p.Price, p.Address, p.Img, p.IdProperty, p.CodeInternal, p.Year, p.IdOwner));
         return Ok(dtos);
     }
 
@@ -52,14 +52,14 @@ public class PropertiesController : ControllerBase
     public async Task<IActionResult> Get(string id)
     {
         var u = await _service.GetByIdAsync(id);
-        return u == null ? NotFound() : Ok(new PropertiesDtos.PropertiesDto(u.Id, u.Name, u.Price, u.Address, u.Img));
+        return u == null ? NotFound() : Ok(new PropertiesDtos.PropertiesDto(u.Id, u.Name, u.Price, u.Address, u.Img, u.IdProperty, u.CodeInternal, u.Year, u.IdOwner));
     }
 
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] PropertiesDtos.CreatePropertiesDto dto)
     {
         var u = await _service.CreateAsync(dto.IdOwner, dto.Name, dto.Price, dto.Address, dto.Img);
-        return CreatedAtAction(nameof(Get), new { id = u.Id }, new PropertiesDtos.PropertiesDto(u.Id, u.Name, u.Price, u.Address, u.Img));
+        return CreatedAtAction(nameof(Get), new { id = u.Id }, new PropertiesDtos.PropertiesDto(u.Id, u.Name, u.Price, u.Address, u.Img, u.IdProperty, u.CodeInternal, u.Year, u.IdOwner));
     }
 
     [HttpPut("{id}")]

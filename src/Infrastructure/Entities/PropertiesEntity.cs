@@ -15,4 +15,7 @@ public class PropertiesEntity
     public string Address { get; set; } = default!;
     public double Price { get; set; } = default!;
     public string Img { get; set; } = default!;
+    public int IdProperty { get; set; } = default!;
+    public string CodeInternal { get; set; } = string.Empty;
+    public int Year { get; set; } = default!;
 }

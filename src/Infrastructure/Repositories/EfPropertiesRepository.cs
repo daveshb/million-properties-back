@@ -12,14 +12,14 @@ public class MongoPropertiesRepository : IPropertiesRepository
     private readonly MongoDbContext _db;
     public MongoPropertiesRepository(MongoDbContext db) => _db = db;
 
-    private static Properties MapToDomain(PropertiesEntity e) => new Properties(e.IdOwner, e.Name, e.Price, e.Address, e.Img) { };
+    private static Properties MapToDomain(PropertiesEntity e) => new Properties(e.IdOwner, e.Name, e.Price, e.Address, e.Img, e.IdProperty, e.CodeInternal, e.Year) { };
 
     private static PropertiesEntity MapToEntity(Properties u) =>
-        new PropertiesEntity { Id = u.Id, Name = u.Name, IdOwner = u.IdOwner, Price = u.Price, Address = u.Address, Img = u.Img };
+        new PropertiesEntity { Id = u.Id, Name = u.Name, IdOwner = u.IdOwner, Price = u.Price, Address = u.Address, Img = u.Img, IdProperty = u.IdProperty, CodeInternal = u.CodeInternal, Year = u.Year };
 
     public async Task AddAsync(Properties properties, CancellationToken ct = default)
     {
-        var entity = new PropertiesEntity { Name = properties.Name, IdOwner = properties.IdOwner, Price = properties.Price, Address = properties.Address, Img = properties.Img };
+        var entity = new PropertiesEntity { Name = properties.Name, IdOwner = properties.IdOwner, Price = properties.Price, Address = properties.Address, Img = properties.Img, IdProperty = properties.IdProperty, CodeInternal = properties.CodeInternal, Year = properties.Year };
         await _db.Properties.InsertOneAsync(entity, cancellationToken: ct);
         // actualizar Id en el dominio
         typeof(Properties).GetProperty("Id")!.SetValue(properties, entity.Id);
@@ -35,7 +35,7 @@ public class MongoPropertiesRepository : IPropertiesRepository
         var entities = await _db.Properties.Find(_ => true).ToListAsync(ct);
         return entities.Select(e => 
         {
-            var prop = new Properties(e.IdOwner, e.Name, e.Price, e.Address, e.Img);
+            var prop = new Properties(e.IdOwner, e.Name, e.Price, e.Address, e.Img, e.IdProperty, e.CodeInternal, e.Year);
             typeof(Properties).GetProperty("Id")!.SetValue(prop, e.Id);
             return prop;
         });
@@ -47,7 +47,7 @@ public class MongoPropertiesRepository : IPropertiesRepository
         var entities = await _db.Properties.Find(filter).ToListAsync(ct);
         return entities.Select(e => 
         {
-            var prop = new Properties(e.IdOwner, e.Name, e.Price, e.Address, e.Img);
+            var prop = new Properties(e.IdOwner, e.Name, e.Price, e.Address, e.Img, e.IdProperty, e.CodeInternal, e.Year);
             typeof(Properties).GetProperty("Id")!.SetValue(prop, e.Id);
             return prop;
         });
@@ -59,7 +59,7 @@ public class MongoPropertiesRepository : IPropertiesRepository
         var entities = await _db.Properties.Find(filter).ToListAsync(ct);
         return entities.Select(e => 
         {
-            var prop = new Properties(e.IdOwner, e.Name, e.Price, e.Address, e.Img);
+            var prop = new Properties(e.IdOwner, e.Name, e.Price, e.Address, e.Img, e.IdProperty, e.CodeInternal, e.Year);
             typeof(Properties).GetProperty("Id")!.SetValue(prop, e.Id);
             return prop;
         });
@@ -80,7 +80,7 @@ public class MongoPropertiesRepository : IPropertiesRepository
         var entities = await _db.Properties.Find(filter).ToListAsync(ct);
         return entities.Select(e => 
         {
-            var prop = new Properties(e.IdOwner, e.Name, e.Price, e.Address, e.Img);
+            var prop = new Properties(e.IdOwner, e.Name, e.Price, e.Address, e.Img, e.IdProperty, e.CodeInternal, e.Year);
             typeof(Properties).GetProperty("Id")!.SetValue(prop, e.Id);
             return prop;
         });
@@ -90,7 +90,7 @@ public class MongoPropertiesRepository : IPropertiesRepository
     {
         var e = await _db.Properties.Find(x => x.Id == id).FirstOrDefaultAsync(ct);
         if (e == null) return null;
-        var u = new Properties(e.IdOwner, e.Name, e.Price, e.Address, e.Img);
+        var u = new Properties(e.IdOwner, e.Name, e.Price, e.Address, e.Img, e.IdProperty, e.CodeInternal, e.Year);
         typeof(Properties).GetProperty("Id")!.SetValue(u, e.Id);
         return u;
     }
@@ -102,7 +102,10 @@ public class MongoPropertiesRepository : IPropertiesRepository
             .Set(x => x.Name, properties.Name)
             .Set(x => x.Price, properties.Price)
             .Set(x => x.Address, properties.Address)
-            .Set(x => x.Img, properties.Img);
+            .Set(x => x.Img, properties.Img)
+            .Set(x => x.IdProperty, properties.IdProperty)
+            .Set(x => x.CodeInternal, properties.CodeInternal)
+            .Set(x => x.Year, properties.Year);
         
         var result = await _db.Properties.UpdateOneAsync(filter, update, cancellationToken: ct);
         if (result.MatchedCount == 0)
