@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: myapp-api
+    env: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: starter
+    region: oregon
+    branch: main
+    buildCommand: ""
+    startCommand: ""
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: ASPNETCORE_URLS
+        value: http://0.0.0.0:8080
+      - key: ConnectionStrings__DefaultConnection
+        value: mongodb+srv://runner_node:j7Mlqovt4dlxjon8@runner.vik01lo.mongodb.net/millions
+      - key: AllowedOrigins
+        value: https://your-frontend-domain.com
+    healthCheckPath: /swagger
+    autoDeploy: true

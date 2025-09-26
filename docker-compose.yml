@@ -1,0 +1,34 @@
+version: '3.8'
+
+services:
+  myapp-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=mongodb://mongo:27017
+    depends_on:
+      - mongo
+    networks:
+      - myapp-network
+
+  mongo:
+    image: mongo:7.0
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_DATABASE=millions
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - myapp-network
+
+volumes:
+  mongo_data:
+
+networks:
+  myapp-network:
+    driver: bridge
