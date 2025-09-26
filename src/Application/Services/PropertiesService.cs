@@ -11,6 +11,9 @@ public class PropertiesService : IPropertiesService
     public Task<IEnumerable<Properties>> GetAllAsync(CancellationToken ct = default) =>
         _repo.GetAllAsync(ct);
 
+    public Task<IEnumerable<Properties>> GetByNameAsync(string name, CancellationToken ct = default) =>
+        _repo.GetByNameAsync(name, ct);
+
     public Task<Properties?> GetByIdAsync(string id, CancellationToken ct = default) =>
         _repo.GetByIdAsync(id, ct);
 

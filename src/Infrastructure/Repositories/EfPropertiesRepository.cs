@@ -41,6 +41,18 @@ public class MongoPropertiesRepository : IPropertiesRepository
         });
     }
 
+    public async Task<IEnumerable<Properties>> GetByNameAsync(string name, CancellationToken ct = default)
+    {
+        var filter = Builders<PropertiesEntity>.Filter.Regex(x => x.Name, new MongoDB.Bson.BsonRegularExpression(name, "i"));
+        var entities = await _db.Properties.Find(filter).ToListAsync(ct);
+        return entities.Select(e => 
+        {
+            var prop = new Properties(e.IdOwner, e.Name, e.Price, e.Address, e.Img);
+            typeof(Properties).GetProperty("Id")!.SetValue(prop, e.Id);
+            return prop;
+        });
+    }
+
     public async Task<Properties?> GetByIdAsync(string id, CancellationToken ct = default)
     {
         var e = await _db.Properties.Find(x => x.Id == id).FirstOrDefaultAsync(ct);

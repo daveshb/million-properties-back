@@ -5,6 +5,23 @@ using MyApp.Infrastructure.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
+var allowedOrigins = builder.Configuration["AllowedOrigins"] ?? ""; 
+var origins = allowedOrigins
+    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("Frontends", policy =>
+    {
+        policy.WithOrigins(origins)              
+              .AllowAnyMethod()                 
+              .AllowAnyHeader()
+              .AllowCredentials();
+    });
+});
+
+
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -20,6 +37,9 @@ builder.Services.AddScoped<IPropertiesRepository, MongoPropertiesRepository>();
 builder.Services.AddScoped<IPropertiesService, PropertiesService>();
 
 var app = builder.Build();
+
+app.UseHttpsRedirection();
+app.UseCors("Frontends");
 
 if (app.Environment.IsDevelopment())
 {

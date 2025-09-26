@@ -12,9 +12,11 @@ public class PropertiesController : ControllerBase
     public PropertiesController(IPropertiesService service) => _service = service;
 
     [HttpGet]
-    public async Task<IActionResult> GetAll()
+    public async Task<IActionResult> GetAll([FromQuery] string? name = null)
     {
-        var properties = await _service.GetAllAsync();
+        var properties = string.IsNullOrEmpty(name) 
+            ? await _service.GetAllAsync() 
+            : await _service.GetByNameAsync(name);
         var dtos = properties.Select(p => new PropertiesDtos.PropertiesDto(p.Id, p.Name, p.Price, p.Address, p.Img));
         return Ok(dtos);
     }
