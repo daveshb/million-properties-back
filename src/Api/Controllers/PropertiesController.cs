@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using MyApp.Application.Dtos;
 using MyApp.Application.Services;
 using MyApp.Domain.Entities;
+using MyApp.Domain.Ports;
 
 namespace MyApp.Api.Controllers;
 
@@ -10,7 +11,15 @@ namespace MyApp.Api.Controllers;
 public class PropertiesController : ControllerBase
 {
     private readonly IPropertiesService _service;
-    public PropertiesController(IPropertiesService service) => _service = service;
+    private readonly IOwnerRepository _ownerRepository;
+    private readonly IPropertyTraceRepository _propertyTraceRepository;
+    
+    public PropertiesController(IPropertiesService service, IOwnerRepository ownerRepository, IPropertyTraceRepository propertyTraceRepository)
+    {
+        _service = service;
+        _ownerRepository = ownerRepository;
+        _propertyTraceRepository = propertyTraceRepository;
+    }
 
     [HttpGet]
     public async Task<IActionResult> GetAll([FromQuery] string? name = null, [FromQuery] string? address = null, [FromQuery] double? minPrice = null, [FromQuery] double? maxPrice = null)
@@ -51,8 +60,31 @@ public class PropertiesController : ControllerBase
     [HttpGet("{id}")]
     public async Task<IActionResult> Get(string id)
     {
-        var u = await _service.GetByIdAsync(id);
-        return u == null ? NotFound() : Ok(new PropertiesDtos.PropertiesDto(u.Id, u.Name, u.Price, u.Address, u.Img, u.IdProperty, u.CodeInternal, u.Year, u.IdOwner));
+        var property = await _service.GetByIdAsync(id);
+        if (property == null) return NotFound();
+
+        // Consultar datos del owner
+        var owner = await _ownerRepository.GetByIdOwnerAsync(property.IdOwner);
+        var ownerDto = owner != null ? new PropertiesDtos.OwnerDto(owner.Id, owner.IdOwner, owner.Name, owner.Email, owner.Phone) : null;
+
+        // Consultar datos del property trace
+        var propertyTraces = await _propertyTraceRepository.GetByIdPropertyAsync(property.IdProperty);
+        var propertyTraceDtos = propertyTraces.Select(pt => new PropertiesDtos.PropertyTraceDto(pt.Id, pt.IdProperty, pt.DateSale, pt.Name, pt.Value, pt.Tax));
+
+        var result = new PropertiesDtos.PropertiesWithDetailsDto(
+            property.Id, 
+            property.Name, 
+            property.Price, 
+            property.Address, 
+            property.Img, 
+            property.IdProperty, 
+            property.CodeInternal, 
+            property.Year, 
+            property.IdOwner, 
+            ownerDto, 
+            propertyTraceDtos);
+
+        return Ok(result);
     }
 
     [HttpPost]

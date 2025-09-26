@@ -19,4 +19,6 @@ public class MongoDbContext
     }
 
     public IMongoCollection<PropertiesEntity> Properties => _database.GetCollection<PropertiesEntity>("properties");
+    public IMongoCollection<OwnerEntity> Owners => _database.GetCollection<OwnerEntity>("owner");
+    public IMongoCollection<PropertyTraceEntity> PropertyTraces => _database.GetCollection<PropertyTraceEntity>("propertytrace");
 }

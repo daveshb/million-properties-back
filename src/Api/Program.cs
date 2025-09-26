@@ -34,6 +34,8 @@ builder.Services.AddSingleton<MongoDbContext>(provider =>
 });
 
 builder.Services.AddScoped<IPropertiesRepository, MongoPropertiesRepository>();
+builder.Services.AddScoped<IOwnerRepository, MongoOwnerRepository>();
+builder.Services.AddScoped<IPropertyTraceRepository, MongoPropertyTraceRepository>();
 builder.Services.AddScoped<IPropertiesService, PropertiesService>();
 
 var app = builder.Build();
