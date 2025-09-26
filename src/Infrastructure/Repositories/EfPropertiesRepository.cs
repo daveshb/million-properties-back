@@ -53,6 +53,39 @@ public class MongoPropertiesRepository : IPropertiesRepository
         });
     }
 
+    public async Task<IEnumerable<Properties>> GetByAddressAsync(string address, CancellationToken ct = default)
+    {
+        var filter = Builders<PropertiesEntity>.Filter.Regex(x => x.Address, new MongoDB.Bson.BsonRegularExpression(address, "i"));
+        var entities = await _db.Properties.Find(filter).ToListAsync(ct);
+        return entities.Select(e => 
+        {
+            var prop = new Properties(e.IdOwner, e.Name, e.Price, e.Address, e.Img);
+            typeof(Properties).GetProperty("Id")!.SetValue(prop, e.Id);
+            return prop;
+        });
+    }
+
+    public async Task<IEnumerable<Properties>> GetByPriceRangeAsync(double? minPrice, double? maxPrice, CancellationToken ct = default)
+    {
+        var filterBuilder = Builders<PropertiesEntity>.Filter;
+        var filters = new List<MongoDB.Driver.FilterDefinition<PropertiesEntity>>();
+
+        if (minPrice.HasValue)
+            filters.Add(filterBuilder.Gte(x => x.Price, minPrice.Value));
+
+        if (maxPrice.HasValue)
+            filters.Add(filterBuilder.Lte(x => x.Price, maxPrice.Value));
+
+        var filter = filters.Count > 0 ? filterBuilder.And(filters) : filterBuilder.Empty;
+        var entities = await _db.Properties.Find(filter).ToListAsync(ct);
+        return entities.Select(e => 
+        {
+            var prop = new Properties(e.IdOwner, e.Name, e.Price, e.Address, e.Img);
+            typeof(Properties).GetProperty("Id")!.SetValue(prop, e.Id);
+            return prop;
+        });
+    }
+
     public async Task<Properties?> GetByIdAsync(string id, CancellationToken ct = default)
     {
         var e = await _db.Properties.Find(x => x.Id == id).FirstOrDefaultAsync(ct);

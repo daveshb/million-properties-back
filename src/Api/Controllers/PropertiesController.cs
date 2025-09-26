@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using MyApp.Application.Dtos;
 using MyApp.Application.Services;
+using MyApp.Domain.Entities;
 
 namespace MyApp.Api.Controllers;
 
@@ -12,11 +13,37 @@ public class PropertiesController : ControllerBase
     public PropertiesController(IPropertiesService service) => _service = service;
 
     [HttpGet]
-    public async Task<IActionResult> GetAll([FromQuery] string? name = null)
+    public async Task<IActionResult> GetAll([FromQuery] string? name = null, [FromQuery] string? address = null, [FromQuery] double? minPrice = null, [FromQuery] double? maxPrice = null)
     {
-        var properties = string.IsNullOrEmpty(name) 
-            ? await _service.GetAllAsync() 
-            : await _service.GetByNameAsync(name);
+        IEnumerable<Properties> properties;
+
+        if (string.IsNullOrEmpty(name) && string.IsNullOrEmpty(address) && (minPrice.HasValue || maxPrice.HasValue))
+        {
+            properties = await _service.GetByPriceRangeAsync(minPrice, maxPrice);
+        }
+        else if (!string.IsNullOrEmpty(name) || !string.IsNullOrEmpty(address))
+        {
+            properties = (name, address) switch
+            {
+                (not null, not null) => (await _service.GetByNameAsync(name))
+                    .Where(p => p.Address.Contains(address, StringComparison.OrdinalIgnoreCase)),
+                (not null, null) => await _service.GetByNameAsync(name),
+                (null, not null) => await _service.GetByAddressAsync(address),
+                _ => await _service.GetAllAsync()
+            };
+
+            if (minPrice.HasValue || maxPrice.HasValue)
+            {
+                properties = properties.Where(p => 
+                    (!minPrice.HasValue || p.Price >= minPrice.Value) &&
+                    (!maxPrice.HasValue || p.Price <= maxPrice.Value));
+            }
+        }
+        else
+        {
+            properties = await _service.GetAllAsync();
+        }
+
         var dtos = properties.Select(p => new PropertiesDtos.PropertiesDto(p.Id, p.Name, p.Price, p.Address, p.Img));
         return Ok(dtos);
     }

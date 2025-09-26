@@ -14,6 +14,12 @@ public class PropertiesService : IPropertiesService
     public Task<IEnumerable<Properties>> GetByNameAsync(string name, CancellationToken ct = default) =>
         _repo.GetByNameAsync(name, ct);
 
+    public Task<IEnumerable<Properties>> GetByAddressAsync(string address, CancellationToken ct = default) =>
+        _repo.GetByAddressAsync(address, ct);
+
+    public Task<IEnumerable<Properties>> GetByPriceRangeAsync(double? minPrice, double? maxPrice, CancellationToken ct = default) =>
+        _repo.GetByPriceRangeAsync(minPrice, maxPrice, ct);
+
     public Task<Properties?> GetByIdAsync(string id, CancellationToken ct = default) =>
         _repo.GetByIdAsync(id, ct);
 
