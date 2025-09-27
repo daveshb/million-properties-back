@@ -41,6 +41,22 @@ public class MongoPropertiesRepository : IPropertiesRepository
         });
     }
 
+    public async Task<(IEnumerable<Properties> Items, int TotalCount)> GetAllPaginatedAsync(int pageNumber, int pageSize, CancellationToken ct = default)
+    {
+        var skip = (pageNumber - 1) * pageSize;
+        var totalCount = await _db.Properties.CountDocumentsAsync(_ => true, cancellationToken: ct);
+        var entities = await _db.Properties.Find(_ => true).Skip(skip).Limit(pageSize).ToListAsync(ct);
+        
+        var items = entities.Select(e => 
+        {
+            var prop = new Properties(e.IdOwner, e.Name, e.Price, e.Address, e.Img, e.IdProperty, e.CodeInternal, e.Year);
+            typeof(Properties).GetProperty("Id")!.SetValue(prop, e.Id);
+            return prop;
+        });
+        
+        return (items, (int)totalCount);
+    }
+
     public async Task<IEnumerable<Properties>> GetByNameAsync(string name, CancellationToken ct = default)
     {
         var filter = Builders<PropertiesEntity>.Filter.Regex(x => x.Name, new MongoDB.Bson.BsonRegularExpression(name, "i"));
@@ -51,6 +67,23 @@ public class MongoPropertiesRepository : IPropertiesRepository
             typeof(Properties).GetProperty("Id")!.SetValue(prop, e.Id);
             return prop;
         });
+    }
+
+    public async Task<(IEnumerable<Properties> Items, int TotalCount)> GetByNamePaginatedAsync(string name, int pageNumber, int pageSize, CancellationToken ct = default)
+    {
+        var filter = Builders<PropertiesEntity>.Filter.Regex(x => x.Name, new MongoDB.Bson.BsonRegularExpression(name, "i"));
+        var skip = (pageNumber - 1) * pageSize;
+        var totalCount = await _db.Properties.CountDocumentsAsync(filter, cancellationToken: ct);
+        var entities = await _db.Properties.Find(filter).Skip(skip).Limit(pageSize).ToListAsync(ct);
+        
+        var items = entities.Select(e => 
+        {
+            var prop = new Properties(e.IdOwner, e.Name, e.Price, e.Address, e.Img, e.IdProperty, e.CodeInternal, e.Year);
+            typeof(Properties).GetProperty("Id")!.SetValue(prop, e.Id);
+            return prop;
+        });
+        
+        return (items, (int)totalCount);
     }
 
     public async Task<IEnumerable<Properties>> GetByAddressAsync(string address, CancellationToken ct = default)
@@ -110,5 +143,103 @@ public class MongoPropertiesRepository : IPropertiesRepository
         var result = await _db.Properties.UpdateOneAsync(filter, update, cancellationToken: ct);
         if (result.MatchedCount == 0)
             throw new InvalidOperationException("Properties not found");
+    }
+
+    // Helper method for pagination
+    private async Task<(IEnumerable<Properties> Items, int TotalCount)> GetPaginatedAsync(
+        MongoDB.Driver.FilterDefinition<PropertiesEntity> filter, int pageNumber, int pageSize, CancellationToken ct = default)
+    {
+        var skip = (pageNumber - 1) * pageSize;
+        var totalCount = await _db.Properties.CountDocumentsAsync(filter, cancellationToken: ct);
+        var entities = await _db.Properties.Find(filter).Skip(skip).Limit(pageSize).ToListAsync(ct);
+        
+        var items = entities.Select(e => 
+        {
+            var prop = new Properties(e.IdOwner, e.Name, e.Price, e.Address, e.Img, e.IdProperty, e.CodeInternal, e.Year);
+            typeof(Properties).GetProperty("Id")!.SetValue(prop, e.Id);
+            return prop;
+        });
+        
+        return (items, (int)totalCount);
+    }
+
+    // Pagination methods for different filter combinations
+    public async Task<(IEnumerable<Properties> Items, int TotalCount)> GetByAddressPaginatedAsync(string address, int pageNumber, int pageSize, CancellationToken ct = default)
+    {
+        var filter = Builders<PropertiesEntity>.Filter.Regex(x => x.Address, new MongoDB.Bson.BsonRegularExpression(address, "i"));
+        return await GetPaginatedAsync(filter, pageNumber, pageSize, ct);
+    }
+
+    public async Task<(IEnumerable<Properties> Items, int TotalCount)> GetByPriceRangePaginatedAsync(double? minPrice, double? maxPrice, int pageNumber, int pageSize, CancellationToken ct = default)
+    {
+        var filterBuilder = Builders<PropertiesEntity>.Filter;
+        var filters = new List<MongoDB.Driver.FilterDefinition<PropertiesEntity>>();
+
+        if (minPrice.HasValue)
+            filters.Add(filterBuilder.Gte(x => x.Price, minPrice.Value));
+
+        if (maxPrice.HasValue)
+            filters.Add(filterBuilder.Lte(x => x.Price, maxPrice.Value));
+
+        var filter = filters.Count > 0 ? filterBuilder.And(filters) : filterBuilder.Empty;
+        return await GetPaginatedAsync(filter, pageNumber, pageSize, ct);
+    }
+
+    public async Task<(IEnumerable<Properties> Items, int TotalCount)> GetByNameAndAddressPaginatedAsync(string name, string address, int pageNumber, int pageSize, CancellationToken ct = default)
+    {
+        var nameFilter = Builders<PropertiesEntity>.Filter.Regex(x => x.Name, new MongoDB.Bson.BsonRegularExpression(name, "i"));
+        var addressFilter = Builders<PropertiesEntity>.Filter.Regex(x => x.Address, new MongoDB.Bson.BsonRegularExpression(address, "i"));
+        var filter = Builders<PropertiesEntity>.Filter.And(nameFilter, addressFilter);
+        return await GetPaginatedAsync(filter, pageNumber, pageSize, ct);
+    }
+
+    public async Task<(IEnumerable<Properties> Items, int TotalCount)> GetByNameAndPriceRangePaginatedAsync(string name, double? minPrice, double? maxPrice, int pageNumber, int pageSize, CancellationToken ct = default)
+    {
+        var nameFilter = Builders<PropertiesEntity>.Filter.Regex(x => x.Name, new MongoDB.Bson.BsonRegularExpression(name, "i"));
+        var priceFilters = new List<MongoDB.Driver.FilterDefinition<PropertiesEntity>> { nameFilter };
+
+        if (minPrice.HasValue)
+            priceFilters.Add(Builders<PropertiesEntity>.Filter.Gte(x => x.Price, minPrice.Value));
+
+        if (maxPrice.HasValue)
+            priceFilters.Add(Builders<PropertiesEntity>.Filter.Lte(x => x.Price, maxPrice.Value));
+
+        var filter = Builders<PropertiesEntity>.Filter.And(priceFilters);
+        return await GetPaginatedAsync(filter, pageNumber, pageSize, ct);
+    }
+
+    public async Task<(IEnumerable<Properties> Items, int TotalCount)> GetByAddressAndPriceRangePaginatedAsync(string address, double? minPrice, double? maxPrice, int pageNumber, int pageSize, CancellationToken ct = default)
+    {
+        var addressFilter = Builders<PropertiesEntity>.Filter.Regex(x => x.Address, new MongoDB.Bson.BsonRegularExpression(address, "i"));
+        var priceFilters = new List<MongoDB.Driver.FilterDefinition<PropertiesEntity>> { addressFilter };
+
+        if (minPrice.HasValue)
+            priceFilters.Add(Builders<PropertiesEntity>.Filter.Gte(x => x.Price, minPrice.Value));
+
+        if (maxPrice.HasValue)
+            priceFilters.Add(Builders<PropertiesEntity>.Filter.Lte(x => x.Price, maxPrice.Value));
+
+        var filter = Builders<PropertiesEntity>.Filter.And(priceFilters);
+        return await GetPaginatedAsync(filter, pageNumber, pageSize, ct);
+    }
+
+    public async Task<(IEnumerable<Properties> Items, int TotalCount)> GetByAllFiltersPaginatedAsync(string name, string address, double? minPrice, double? maxPrice, int pageNumber, int pageSize, CancellationToken ct = default)
+    {
+        var filters = new List<MongoDB.Driver.FilterDefinition<PropertiesEntity>>();
+
+        if (!string.IsNullOrEmpty(name))
+            filters.Add(Builders<PropertiesEntity>.Filter.Regex(x => x.Name, new MongoDB.Bson.BsonRegularExpression(name, "i")));
+
+        if (!string.IsNullOrEmpty(address))
+            filters.Add(Builders<PropertiesEntity>.Filter.Regex(x => x.Address, new MongoDB.Bson.BsonRegularExpression(address, "i")));
+
+        if (minPrice.HasValue)
+            filters.Add(Builders<PropertiesEntity>.Filter.Gte(x => x.Price, minPrice.Value));
+
+        if (maxPrice.HasValue)
+            filters.Add(Builders<PropertiesEntity>.Filter.Lte(x => x.Price, maxPrice.Value));
+
+        var filter = filters.Count > 0 ? Builders<PropertiesEntity>.Filter.And(filters) : Builders<PropertiesEntity>.Filter.Empty;
+        return await GetPaginatedAsync(filter, pageNumber, pageSize, ct);
     }
 }

@@ -22,39 +22,73 @@ public class PropertiesController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetAll([FromQuery] string? name = null, [FromQuery] string? address = null, [FromQuery] double? minPrice = null, [FromQuery] double? maxPrice = null)
+    public async Task<IActionResult> GetAll([FromQuery] string? name = null, [FromQuery] string? address = null, [FromQuery] double? minPrice = null, [FromQuery] double? maxPrice = null, [FromQuery] int page = 1)
     {
-        IEnumerable<Properties> properties;
+        const int pageSize = 9;
+        
+       
+        if (page < 1) page = 1;
 
-        if (string.IsNullOrEmpty(name) && string.IsNullOrEmpty(address) && (minPrice.HasValue || maxPrice.HasValue))
+        (IEnumerable<Properties> items, int totalCount) result;
+
+        if (string.IsNullOrEmpty(name) && string.IsNullOrEmpty(address) && !minPrice.HasValue && !maxPrice.HasValue)
         {
-            properties = await _service.GetByPriceRangeAsync(minPrice, maxPrice);
+            // No filters - get all paginated
+            result = await _service.GetAllPaginatedAsync(page, pageSize);
         }
-        else if (!string.IsNullOrEmpty(name) || !string.IsNullOrEmpty(address))
+        else if (!string.IsNullOrEmpty(name) && !string.IsNullOrEmpty(address) && minPrice.HasValue && maxPrice.HasValue)
         {
-            properties = (name, address) switch
-            {
-                (not null, not null) => (await _service.GetByNameAsync(name))
-                    .Where(p => p.Address.Contains(address, StringComparison.OrdinalIgnoreCase)),
-                (not null, null) => await _service.GetByNameAsync(name),
-                (null, not null) => await _service.GetByAddressAsync(address),
-                _ => await _service.GetAllAsync()
-            };
-
-            if (minPrice.HasValue || maxPrice.HasValue)
-            {
-                properties = properties.Where(p => 
-                    (!minPrice.HasValue || p.Price >= minPrice.Value) &&
-                    (!maxPrice.HasValue || p.Price <= maxPrice.Value));
-            }
+            // All filters
+            result = await _service.GetByAllFiltersPaginatedAsync(name, address, minPrice, maxPrice, page, pageSize);
+        }
+        else if (!string.IsNullOrEmpty(name) && !string.IsNullOrEmpty(address))
+        {
+            // Name and address filters
+            result = await _service.GetByNameAndAddressPaginatedAsync(name, address, page, pageSize);
+        }
+        else if (!string.IsNullOrEmpty(name) && (minPrice.HasValue || maxPrice.HasValue))
+        {
+            // Name and price filters
+            result = await _service.GetByNameAndPriceRangePaginatedAsync(name, minPrice, maxPrice, page, pageSize);
+        }
+        else if (!string.IsNullOrEmpty(address) && (minPrice.HasValue || maxPrice.HasValue))
+        {
+            // Address and price filters
+            result = await _service.GetByAddressAndPriceRangePaginatedAsync(address, minPrice, maxPrice, page, pageSize);
+        }
+        else if (!string.IsNullOrEmpty(name))
+        {
+            // Only name filter
+            result = await _service.GetByNamePaginatedAsync(name, page, pageSize);
+        }
+        else if (!string.IsNullOrEmpty(address))
+        {
+            // Only address filter
+            result = await _service.GetByAddressPaginatedAsync(address, page, pageSize);
+        }
+        else if (minPrice.HasValue || maxPrice.HasValue)
+        {
+            // Only price filters
+            result = await _service.GetByPriceRangePaginatedAsync(minPrice, maxPrice, page, pageSize);
         }
         else
         {
-            properties = await _service.GetAllAsync();
+            // Fallback to all paginated
+            result = await _service.GetAllPaginatedAsync(page, pageSize);
         }
 
-        var dtos = properties.Select(p => new PropertiesDtos.PropertiesDto(p.Id, p.Name, p.Price, p.Address, p.Img, p.IdProperty, p.CodeInternal, p.Year, p.IdOwner));
-        return Ok(dtos);
+        var dtos = result.items.Select(p => new PropertiesDtos.PropertiesDto(p.Id, p.Name, p.Price, p.Address, p.Img, p.IdProperty, p.CodeInternal, p.Year, p.IdOwner));
+        
+        var totalPages = (int)Math.Ceiling((double)result.totalCount / pageSize);
+        
+        var paginatedResponse = new PropertiesDtos.PaginatedPropertiesDto(
+            dtos, 
+            result.totalCount, 
+            page, 
+            pageSize, 
+            totalPages);
+        
+        return Ok(paginatedResponse);
     }
 
     [HttpGet("{id}")]

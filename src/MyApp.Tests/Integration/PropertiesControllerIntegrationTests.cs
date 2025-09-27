@@ -137,41 +137,121 @@ public class PropertiesControllerIntegrationTests
 // Mock implementations for integration testing
 public class MockPropertiesService : IPropertiesService
 {
+    private readonly List<Properties> _properties = new()
+    {
+        new(1, "Test Casa 1", 100000, "Test Calle 1", "test-img1.jpg", 1, "TEST1", 2020),
+        new(2, "Test Casa 2", 200000, "Test Calle 2", "test-img2.jpg", 2, "TEST2", 2021),
+        new(3, "Test Casa 3", 150000, "Test Calle 3", "test-img3.jpg", 3, "TEST3", 2019),
+        new(4, "Test Casa 4", 250000, "Test Calle 4", "test-img4.jpg", 4, "TEST4", 2022),
+        new(5, "Test Casa 5", 180000, "Test Calle 5", "test-img5.jpg", 5, "TEST5", 2021),
+        new(6, "Test Casa 6", 120000, "Test Calle 6", "test-img6.jpg", 6, "TEST6", 2020),
+        new(7, "Test Casa 7", 300000, "Test Calle 7", "test-img7.jpg", 7, "TEST7", 2023),
+        new(8, "Test Casa 8", 160000, "Test Calle 8", "test-img8.jpg", 8, "TEST8", 2021),
+        new(9, "Test Casa 9", 220000, "Test Calle 9", "test-img9.jpg", 9, "TEST9", 2022),
+        new(10, "Test Casa 10", 190000, "Test Calle 10", "test-img10.jpg", 10, "TEST10", 2020),
+        new(11, "Test Casa 11", 280000, "Test Calle 11", "test-img11.jpg", 11, "TEST11", 2023)
+    };
+
     public Task<IEnumerable<Properties>> GetAllAsync(CancellationToken ct = default)
     {
-        var properties = new List<Properties>
-        {
-            new(1, "Test Casa 1", 100000, "Test Calle 1", "test-img1.jpg", 1, "TEST1", 2020),
-            new(2, "Test Casa 2", 200000, "Test Calle 2", "test-img2.jpg", 2, "TEST2", 2021)
-        };
-        return Task.FromResult<IEnumerable<Properties>>(properties);
+        return Task.FromResult<IEnumerable<Properties>>(_properties);
+    }
+
+    public Task<(IEnumerable<Properties> Items, int TotalCount)> GetAllPaginatedAsync(int pageNumber, int pageSize, CancellationToken ct = default)
+    {
+        var skip = (pageNumber - 1) * pageSize;
+        var items = _properties.Skip(skip).Take(pageSize);
+        return Task.FromResult((items, _properties.Count));
     }
 
     public Task<IEnumerable<Properties>> GetByNameAsync(string name, CancellationToken ct = default)
     {
-        var properties = new List<Properties>
-        {
-            new(1, $"Test Casa {name}", 100000, "Test Calle 1", "test-img1.jpg", 1, "TEST1", 2020)
-        };
+        var properties = _properties.Where(p => p.Name.Contains(name, StringComparison.OrdinalIgnoreCase)).ToList();
         return Task.FromResult<IEnumerable<Properties>>(properties);
+    }
+
+    public Task<(IEnumerable<Properties> Items, int TotalCount)> GetByNamePaginatedAsync(string name, int pageNumber, int pageSize, CancellationToken ct = default)
+    {
+        var filtered = _properties.Where(p => p.Name.Contains(name, StringComparison.OrdinalIgnoreCase)).ToList();
+        var skip = (pageNumber - 1) * pageSize;
+        var items = filtered.Skip(skip).Take(pageSize);
+        return Task.FromResult((items, filtered.Count));
     }
 
     public Task<IEnumerable<Properties>> GetByAddressAsync(string address, CancellationToken ct = default)
     {
-        var properties = new List<Properties>
-        {
-            new(1, "Test Casa 1", 100000, $"Test {address}", "test-img1.jpg", 1, "TEST1", 2020)
-        };
+        var properties = _properties.Where(p => p.Address.Contains(address, StringComparison.OrdinalIgnoreCase)).ToList();
         return Task.FromResult<IEnumerable<Properties>>(properties);
+    }
+
+    public Task<(IEnumerable<Properties> Items, int TotalCount)> GetByAddressPaginatedAsync(string address, int pageNumber, int pageSize, CancellationToken ct = default)
+    {
+        var filtered = _properties.Where(p => p.Address.Contains(address, StringComparison.OrdinalIgnoreCase)).ToList();
+        var skip = (pageNumber - 1) * pageSize;
+        var items = filtered.Skip(skip).Take(pageSize);
+        return Task.FromResult((items, filtered.Count));
     }
 
     public Task<IEnumerable<Properties>> GetByPriceRangeAsync(double? minPrice, double? maxPrice, CancellationToken ct = default)
     {
-        var properties = new List<Properties>
-        {
-            new(1, "Test Casa 1", 150000, "Test Calle 1", "test-img1.jpg", 1, "TEST1", 2020)
-        };
+        var properties = _properties.Where(p => 
+            (!minPrice.HasValue || p.Price >= minPrice.Value) &&
+            (!maxPrice.HasValue || p.Price <= maxPrice.Value)).ToList();
         return Task.FromResult<IEnumerable<Properties>>(properties);
+    }
+
+    public Task<(IEnumerable<Properties> Items, int TotalCount)> GetByPriceRangePaginatedAsync(double? minPrice, double? maxPrice, int pageNumber, int pageSize, CancellationToken ct = default)
+    {
+        var filtered = _properties.Where(p => 
+            (!minPrice.HasValue || p.Price >= minPrice.Value) &&
+            (!maxPrice.HasValue || p.Price <= maxPrice.Value)).ToList();
+        var skip = (pageNumber - 1) * pageSize;
+        var items = filtered.Skip(skip).Take(pageSize);
+        return Task.FromResult((items, filtered.Count));
+    }
+
+    public Task<(IEnumerable<Properties> Items, int TotalCount)> GetByNameAndAddressPaginatedAsync(string name, string address, int pageNumber, int pageSize, CancellationToken ct = default)
+    {
+        var filtered = _properties.Where(p => 
+            p.Name.Contains(name, StringComparison.OrdinalIgnoreCase) &&
+            p.Address.Contains(address, StringComparison.OrdinalIgnoreCase)).ToList();
+        var skip = (pageNumber - 1) * pageSize;
+        var items = filtered.Skip(skip).Take(pageSize);
+        return Task.FromResult((items, filtered.Count));
+    }
+
+    public Task<(IEnumerable<Properties> Items, int TotalCount)> GetByNameAndPriceRangePaginatedAsync(string name, double? minPrice, double? maxPrice, int pageNumber, int pageSize, CancellationToken ct = default)
+    {
+        var filtered = _properties.Where(p => 
+            p.Name.Contains(name, StringComparison.OrdinalIgnoreCase) &&
+            (!minPrice.HasValue || p.Price >= minPrice.Value) &&
+            (!maxPrice.HasValue || p.Price <= maxPrice.Value)).ToList();
+        var skip = (pageNumber - 1) * pageSize;
+        var items = filtered.Skip(skip).Take(pageSize);
+        return Task.FromResult((items, filtered.Count));
+    }
+
+    public Task<(IEnumerable<Properties> Items, int TotalCount)> GetByAddressAndPriceRangePaginatedAsync(string address, double? minPrice, double? maxPrice, int pageNumber, int pageSize, CancellationToken ct = default)
+    {
+        var filtered = _properties.Where(p => 
+            p.Address.Contains(address, StringComparison.OrdinalIgnoreCase) &&
+            (!minPrice.HasValue || p.Price >= minPrice.Value) &&
+            (!maxPrice.HasValue || p.Price <= maxPrice.Value)).ToList();
+        var skip = (pageNumber - 1) * pageSize;
+        var items = filtered.Skip(skip).Take(pageSize);
+        return Task.FromResult((items, filtered.Count));
+    }
+
+    public Task<(IEnumerable<Properties> Items, int TotalCount)> GetByAllFiltersPaginatedAsync(string name, string address, double? minPrice, double? maxPrice, int pageNumber, int pageSize, CancellationToken ct = default)
+    {
+        var filtered = _properties.Where(p => 
+            (string.IsNullOrEmpty(name) || p.Name.Contains(name, StringComparison.OrdinalIgnoreCase)) &&
+            (string.IsNullOrEmpty(address) || p.Address.Contains(address, StringComparison.OrdinalIgnoreCase)) &&
+            (!minPrice.HasValue || p.Price >= minPrice.Value) &&
+            (!maxPrice.HasValue || p.Price <= maxPrice.Value)).ToList();
+        var skip = (pageNumber - 1) * pageSize;
+        var items = filtered.Skip(skip).Take(pageSize);
+        return Task.FromResult((items, filtered.Count));
     }
 
     public Task<Properties?> GetByIdAsync(string id, CancellationToken ct = default)
