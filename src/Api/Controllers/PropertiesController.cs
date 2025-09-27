@@ -26,8 +26,18 @@ public class PropertiesController : ControllerBase
     {
         const int pageSize = 9;
         
-       
-        if (page < 1) page = 1;
+        // Validate input parameters
+        if (page < 1) 
+            throw new ArgumentException("Page number must be greater than 0", nameof(page));
+        
+        if (minPrice.HasValue && minPrice < 0)
+            throw new ArgumentException("Minimum price cannot be negative", nameof(minPrice));
+            
+        if (maxPrice.HasValue && maxPrice < 0)
+            throw new ArgumentException("Maximum price cannot be negative", nameof(maxPrice));
+            
+        if (minPrice.HasValue && maxPrice.HasValue && minPrice > maxPrice)
+            throw new ArgumentException("Minimum price cannot be greater than maximum price");
 
         (IEnumerable<Properties> items, int totalCount) result;
 
@@ -94,8 +104,13 @@ public class PropertiesController : ControllerBase
     [HttpGet("{id}")]
     public async Task<IActionResult> Get(string id)
     {
+        // Validate input
+        if (string.IsNullOrWhiteSpace(id))
+            throw new ArgumentException("Property ID cannot be empty", nameof(id));
+
         var property = await _service.GetByIdAsync(id);
-        if (property == null) return NotFound();
+        if (property == null) 
+            throw new InvalidOperationException($"Property with ID '{id}' not found");
 
         // Consultar datos del owner
         var owner = await _ownerRepository.GetByIdOwnerAsync(property.IdOwner);
@@ -124,6 +139,19 @@ public class PropertiesController : ControllerBase
     [HttpPost]
     public async Task<IActionResult> Create([FromBody] PropertiesDtos.CreatePropertiesDto dto)
     {
+        // Validate input
+        if (dto == null)
+            throw new ArgumentNullException(nameof(dto));
+            
+        if (string.IsNullOrWhiteSpace(dto.Name))
+            throw new ArgumentException("Property name is required", nameof(dto.Name));
+            
+        if (dto.Price < 0)
+            throw new ArgumentException("Price cannot be negative", nameof(dto.Price));
+            
+        if (string.IsNullOrWhiteSpace(dto.Address))
+            throw new ArgumentException("Address is required", nameof(dto.Address));
+
         var u = await _service.CreateAsync(dto.IdOwner, dto.Name, dto.Price, dto.Address, dto.Img);
         return CreatedAtAction(nameof(Get), new { id = u.Id }, new PropertiesDtos.PropertiesDto(u.Id, u.Name, u.Price, u.Address, u.Img, u.IdProperty, u.CodeInternal, u.Year, u.IdOwner));
     }
@@ -131,14 +159,40 @@ public class PropertiesController : ControllerBase
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(string id, [FromBody] PropertiesDtos.UpdatePropertiesDto dto)
     {
+        // Validate input
+        if (string.IsNullOrWhiteSpace(id))
+            throw new ArgumentException("Property ID cannot be empty", nameof(id));
+            
+        if (dto == null)
+            throw new ArgumentNullException(nameof(dto));
+            
+        if (string.IsNullOrWhiteSpace(dto.Name))
+            throw new ArgumentException("Property name is required", nameof(dto.Name));
+            
+        if (dto.Price < 0)
+            throw new ArgumentException("Price cannot be negative", nameof(dto.Price));
+            
+        if (string.IsNullOrWhiteSpace(dto.Address))
+            throw new ArgumentException("Address is required", nameof(dto.Address));
+
         var ok = await _service.UpdateAsync(id, dto.Name, dto.Price, dto.Address, dto.Img);
-        return ok ? NoContent() : NotFound();
+        if (!ok)
+            throw new InvalidOperationException($"Property with ID '{id}' not found");
+            
+        return NoContent();
     }
 
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(string id)
     {
+        // Validate input
+        if (string.IsNullOrWhiteSpace(id))
+            throw new ArgumentException("Property ID cannot be empty", nameof(id));
+
         var ok = await _service.DeleteAsync(id);
-        return ok ? NoContent() : NotFound();
+        if (!ok)
+            throw new InvalidOperationException($"Property with ID '{id}' not found");
+            
+        return NoContent();
     }
 }
