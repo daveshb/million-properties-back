@@ -17,6 +17,6 @@ services:
       - key: ConnectionStrings__DefaultConnection
         value: mongodb+srv://runner_node:j7Mlqovt4dlxjon8@runner.vik01lo.mongodb.net/millions
       - key: AllowedOrigins
-        value: https://your-frontend-domain.com
+        value: https://million-properties-front.vercel.app
     healthCheckPath: /swagger
     autoDeploy: true

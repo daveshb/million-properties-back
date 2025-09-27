@@ -34,7 +34,7 @@ dotnet MyApp.Api.dll
    - `ASPNETCORE_ENVIRONMENT=Production`
    - `ASPNETCORE_URLS=http://0.0.0.0:8080`
    - `ConnectionStrings__DefaultConnection=your_mongodb_connection_string`
-   - `AllowedOrigins=your_frontend_domain`
+   - `AllowedOrigins=https://million-properties-front.vercel.app`
 
 ### Required Environment Variables:
 - `ConnectionStrings__DefaultConnection`: MongoDB connection string
