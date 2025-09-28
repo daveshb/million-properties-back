@@ -40,6 +40,9 @@ builder.Services.AddScoped<IPropertiesService, PropertiesService>();
 
 var app = builder.Build();
 
+// Add global exception handling
+app.UseMiddleware<MyApp.Api.Middleware.GlobalExceptionMiddleware>();
+
 app.UseHttpsRedirection();
 app.UseCors("Frontends");
 

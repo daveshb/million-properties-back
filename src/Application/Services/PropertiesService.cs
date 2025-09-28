@@ -20,6 +20,30 @@ public class PropertiesService : IPropertiesService
     public Task<IEnumerable<Properties>> GetByPriceRangeAsync(double? minPrice, double? maxPrice, CancellationToken ct = default) =>
         _repo.GetByPriceRangeAsync(minPrice, maxPrice, ct);
 
+    public Task<(IEnumerable<Properties> Items, int TotalCount)> GetAllPaginatedAsync(int pageNumber, int pageSize, CancellationToken ct = default) =>
+        _repo.GetAllPaginatedAsync(pageNumber, pageSize, ct);
+
+    public Task<(IEnumerable<Properties> Items, int TotalCount)> GetByNamePaginatedAsync(string name, int pageNumber, int pageSize, CancellationToken ct = default) =>
+        _repo.GetByNamePaginatedAsync(name, pageNumber, pageSize, ct);
+
+    public Task<(IEnumerable<Properties> Items, int TotalCount)> GetByAddressPaginatedAsync(string address, int pageNumber, int pageSize, CancellationToken ct = default) =>
+        _repo.GetByAddressPaginatedAsync(address, pageNumber, pageSize, ct);
+
+    public Task<(IEnumerable<Properties> Items, int TotalCount)> GetByPriceRangePaginatedAsync(double? minPrice, double? maxPrice, int pageNumber, int pageSize, CancellationToken ct = default) =>
+        _repo.GetByPriceRangePaginatedAsync(minPrice, maxPrice, pageNumber, pageSize, ct);
+
+    public Task<(IEnumerable<Properties> Items, int TotalCount)> GetByNameAndAddressPaginatedAsync(string name, string address, int pageNumber, int pageSize, CancellationToken ct = default) =>
+        _repo.GetByNameAndAddressPaginatedAsync(name, address, pageNumber, pageSize, ct);
+
+    public Task<(IEnumerable<Properties> Items, int TotalCount)> GetByNameAndPriceRangePaginatedAsync(string name, double? minPrice, double? maxPrice, int pageNumber, int pageSize, CancellationToken ct = default) =>
+        _repo.GetByNameAndPriceRangePaginatedAsync(name, minPrice, maxPrice, pageNumber, pageSize, ct);
+
+    public Task<(IEnumerable<Properties> Items, int TotalCount)> GetByAddressAndPriceRangePaginatedAsync(string address, double? minPrice, double? maxPrice, int pageNumber, int pageSize, CancellationToken ct = default) =>
+        _repo.GetByAddressAndPriceRangePaginatedAsync(address, minPrice, maxPrice, pageNumber, pageSize, ct);
+
+    public Task<(IEnumerable<Properties> Items, int TotalCount)> GetByAllFiltersPaginatedAsync(string name, string address, double? minPrice, double? maxPrice, int pageNumber, int pageSize, CancellationToken ct = default) =>
+        _repo.GetByAllFiltersPaginatedAsync(name, address, minPrice, maxPrice, pageNumber, pageSize, ct);
+
     public Task<Properties?> GetByIdAsync(string id, CancellationToken ct = default) =>
         _repo.GetByIdAsync(id, ct);
 
